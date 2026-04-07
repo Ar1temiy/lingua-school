@@ -1,0 +1,135 @@
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
+from typing import List
+from sqlalchemy.orm import selectinload
+from app.core.database import get_async_session
+from app.core.dependencies import get_current_staff, get_current_student
+from ..models.education import Lesson, Booking, BookingStatusEnum
+from app.models.users import Staff, Student
+from app.schemas.bookings import BookingCreate, BookingResponse, BookingStatusUpdate, BookingDetailResponse
+
+router = APIRouter(prefix="/bookings", tags=["Записи на занятия"])
+
+@router.post("/", summary="Записаться на занятие", description="Позволяет студенту записаться на конкретное занятие. Занимает 1 место в группе. При превышении лимита вернет ошибку.", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
+async def create_booking(
+    booking: BookingCreate,
+    session: AsyncSession = Depends(get_async_session)
+):
+
+    lesson_query = select(Lesson).where(Lesson.id == booking.lesson_id)
+    result = await session.execute(lesson_query)
+    lesson = result.scalar_one_or_none()
+
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Занятие не найдено")
+
+
+    count_query = select(func.count(Booking.id)).where(
+        Booking.lesson_id == lesson.id,
+        Booking.status == BookingStatusEnum.active
+    )
+    count_result = await session.execute(count_query)
+    current_bookings_count = count_result.scalar()
+
+    if current_bookings_count >= lesson.capacity:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Места на это занятие закончились"
+        )
+
+    # Проверяем, есть ли уже такая запись
+    existing_query = select(Booking).where(
+        Booking.lesson_id == lesson.id,
+        Booking.student_id == booking.student_id
+    )
+    existing_res = await session.execute(existing_query)
+    existing_booking = existing_res.scalar_one_or_none()
+
+    if existing_booking:
+        if existing_booking.status == BookingStatusEnum.active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="У вас уже есть активная запись на это занятие"
+            )
+        # Если статус cancelled, просто восстанавливаем
+        existing_booking.status = BookingStatusEnum.active
+        await session.commit()
+        await session.refresh(existing_booking)
+        return existing_booking
+
+    # Создаем новую запись, если ее не было
+    new_booking = Booking(
+        student_id=booking.student_id,
+        lesson_id=booking.lesson_id,
+        status=BookingStatusEnum.active
+    )
+
+    try:
+        session.add(new_booking)
+        await session.commit()
+        await session.refresh(new_booking)
+        return new_booking
+    except Exception as e:
+        # Резервный случай
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ошибка системной записи: {str(e)}"
+        )
+
+@router.patch("/{booking_id}/status", summary="Изменить статус записи (Для Персонала)", description="Позволяет преподавателю или администратору изменить статус записи (например, подтвердить или отменить). Учитель может менять только свои записи.", response_model=BookingResponse)
+async def update_booking_status(
+    booking_id: uuid.UUID,
+    status_update: BookingStatusUpdate,
+    session: AsyncSession = Depends(get_async_session),
+    current_staff: Staff = Depends(get_current_staff)
+):
+    query = select(Booking).join(Lesson).where(Booking.id == booking_id)
+    result = await session.execute(query)
+    booking = result.scalar_one_or_none()
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Запись не найдена")
+    if current_staff.role == "teacher" and booking.lesson.teacher_id != current_staff.id:
+        raise HTTPException(status_code=403, detail="Действие запрещено. Это запись не к вам на занятие.")
+        
+    booking.status = status_update.status
+    await session.commit()
+    await session.refresh(booking)
+    return booking
+
+@router.get("/my", summary="Мои записи (VK)", description="Возвращает список всех записей (и активных, и отмененных) для текущего авторизованного студента VK.", response_model=List[BookingDetailResponse])
+async def get_my_bookings(
+    session: AsyncSession = Depends(get_async_session),
+    current_student: Student = Depends(get_current_student)
+):
+    query = select(Booking).where(
+        Booking.student_id == current_student.id
+    ).options(
+        selectinload(Booking.lesson).selectinload(Lesson.teacher),
+        selectinload(Booking.lesson).selectinload(Lesson.language)
+    )
+    result = await session.execute(query)
+    return result.scalars().all()
+
+@router.patch("/{booking_id}/cancel", summary="Отменить свою запись (VK)", description="Студент может самостоятельно отменить свою активную запись на занятие. Статус поменяется на `cancelled_by_student`.", response_model=BookingResponse)
+async def cancel_my_booking(
+    booking_id: uuid.UUID,
+    session: AsyncSession = Depends(get_async_session),
+    current_student: Student = Depends(get_current_student)
+):
+    query = select(Booking).where(Booking.id == booking_id)
+    result = await session.execute(query)
+    booking = result.scalar_one_or_none()
+    
+    if not booking:
+        raise HTTPException(status_code=404, detail="Запись не найдена")
+    if booking.student_id != current_student.id:
+        raise HTTPException(status_code=403, detail="Это не ваша запись")
+        
+    booking.status = BookingStatusEnum.cancelled_by_student
+    await session.commit()
+    await session.refresh(booking)
+    return booking
