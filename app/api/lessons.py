@@ -8,7 +8,7 @@ from app.core.database import get_async_session
 from app.core.dependencies import get_current_staff, get_optional_current_student
 from app.models.education import Lesson, LessonStatusEnum, Booking
 from app.models.users import Staff, Student
-from app.schemas.education import LessonCreate, LessonResponse, LessonStatusUpdate, LessonStudentResponse
+from app.schemas.education import LessonCreate, LessonResponse, LessonStatusUpdate, LessonStudentResponse, LessonUpdate
 from app.schemas.users import StudentResponse
 from datetime import date
 
@@ -162,3 +162,74 @@ async def update_lesson_status(
     await session.commit()
     await session.refresh(lesson)
     return lesson
+
+@router.patch("/{lesson_id}", summary="Изменить время и вместимость занятия (Для Персонала)", description="Позволяет обновить параметры занятия. Проверяет накладки, если меняется время.", response_model=LessonResponse)
+async def update_lesson(
+    lesson_id: uuid.UUID,
+    lesson_update: LessonUpdate,
+    session: AsyncSession = Depends(get_async_session),
+    current_staff: Staff = Depends(get_current_staff)
+):
+    query = select(Lesson).where(Lesson.id == lesson_id)
+    result = await session.execute(query)
+    lesson = result.scalar_one_or_none()
+    
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Занятие не найдено")
+    if current_staff.role == "teacher" and lesson.teacher_id != current_staff.id:
+        raise HTTPException(status_code=403, detail="Нет доступа к чужому занятию")
+
+    new_start_time = lesson_update.start_time or lesson.start_time
+    new_end_time = lesson_update.end_time or lesson.end_time
+
+    if new_start_time >= new_end_time:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Время окончания занятия должно быть позже времени начала"
+        )
+
+    # Проверка накладок, если время изменилось
+    if lesson_update.start_time or lesson_update.end_time:
+        overlap_query = select(Lesson).where(
+            and_(
+                Lesson.teacher_id == lesson.teacher_id,
+                Lesson.id != lesson_id,
+                Lesson.status != LessonStatusEnum.cancelled,
+                Lesson.start_time < new_end_time,
+                Lesson.end_time > new_start_time
+            )
+        )
+        overlap_res = await session.execute(overlap_query)
+        if overlap_res.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="У преподавателя уже есть занятие в это время (накладка в расписании)"
+            )
+        
+        lesson.start_time = new_start_time
+        lesson.end_time = new_end_time
+
+    if lesson_update.capacity is not None:
+        lesson.capacity = lesson_update.capacity
+
+    await session.commit()
+    await session.refresh(lesson)
+    return lesson
+
+@router.delete("/{lesson_id}", summary="Удалить занятие (Для Персонала)", description="Позволяет полностью удалить занятие. Админ может удалить любое занятие, учитель - только свое.", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_lesson(
+    lesson_id: uuid.UUID,
+    session: AsyncSession = Depends(get_async_session),
+    current_staff: Staff = Depends(get_current_staff)
+):
+    query = select(Lesson).where(Lesson.id == lesson_id)
+    result = await session.execute(query)
+    lesson = result.scalar_one_or_none()
+    
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Занятие не найдено")
+    if current_staff.role == "teacher" and lesson.teacher_id != current_staff.id:
+        raise HTTPException(status_code=403, detail="Нет доступа к чужому занятию")
+
+    await session.delete(lesson)
+    await session.commit()

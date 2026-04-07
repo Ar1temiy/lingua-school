@@ -46,3 +46,9 @@ class LessonStudentResponse(LessonResponse):
 
 class LessonStatusUpdate(BaseModel):
     status: LessonStatusEnum
+
+
+class LessonUpdate(BaseModel):
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    capacity: int | None = None

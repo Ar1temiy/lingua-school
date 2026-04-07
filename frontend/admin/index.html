@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Lingua Admin</title>
+    <base href="/admin/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css?v=1" />
+    <style>
+        .admin-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .admin-input {
+            background: var(--surface-high);
+            border: 1px solid var(--outline);
+            padding: 14px;
+            border-radius: var(--radius-md);
+            color: var(--on-bg);
+            font-size: 16px;
+        }
+
+        .admin-input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        select.admin-input {
+            appearance: none;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-card {
+            background: var(--surface);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            min-width: 320px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-ghost {
+            padding: 12px 16px;
+            color: var(--on-muted);
+            font-weight: 600;
+        }
+
+        .btn-danger {
+            background: rgba(255, 77, 26, 0.12);
+            color: var(--tertiary);
+            border-radius: var(--radius-lg);
+            padding: 12px 16px;
+            font-weight: 700;
+        }
+
+        #screen-dashboard main {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Login Screen -->
+    <div id="screen-login" class="screen active">
+        <header class="app-header">
+            <h1 class="header-name">Вход для сотрудников</h1>
+        </header>
+        <main class="screen-content" style="display: flex; align-items: center; justify-content: center;">
+            <form class="admin-form" id="login-form">
+                <input type="email" id="login-email" class="admin-input" placeholder="Email" required />
+                <input type="password" id="login-password" class="admin-input" placeholder="Пароль" required />
+                <button type="submit" class="btn-primary" style="justify-content: center;">Войти</button>
+            </form>
+        </main>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="screen-dashboard" class="screen">
+        <header class="app-header">
+            <div class="header-greeting">
+                <span class="header-label" id="role-label">Учитель</span>
+                <h1 class="header-name" id="staff-name">Сотрудник</h1>
+            </div>
+            <button class="btn-ghost" onclick="logout()">Выйти</button>
+        </header>
+        <main class="screen-content">
+
+            <!-- Lessons Section -->
+            <section class="section">
+                <div class="section-title-row">
+                    <h2 class="section-title">Занятия</h2>
+                    <button class="btn-primary" style="padding: 8px 14px; font-size: 12px;"
+                        onclick="openCreateLessonModal()">Создать</button>
+                </div>
+                <div id="lessons-list" class="booking-list">
+                    <div class="skeleton-card"></div>
+                </div>
+            </section>
+
+            <!-- Teachers Section (Admin Only) -->
+            <section class="section hidden" id="teachers-section">
+                <div class="section-title-row">
+                    <h2 class="section-title">Учителя</h2>
+                    <button class="btn-primary" style="padding: 8px 14px; font-size: 12px;"
+                        onclick="openCreateStaffModal()">Добавить</button>
+                </div>
+                <div id="teachers-list" class="booking-list">
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Lesson Modal -->
+    <div id="lesson-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 class="modal-title" id="lesson-modal-title">Создать занятие</h3>
+            <form class="admin-form" id="lesson-form" style="margin-top:16px;">
+                <input type="hidden" id="lesson-id" />
+
+                <label style="font-size: 12px; color: var(--on-muted);">Преподаватель (только для админа)</label>
+                <select id="lesson-teacher" class="admin-input">
+                    <option value="">Я (или выберите)</option>
+                </select>
+
+                <label style="font-size: 12px; color: var(--on-muted);">Язык</label>
+                <select id="lesson-language" class="admin-input" required></select>
+
+                <label style="font-size: 12px; color: var(--on-muted);">Тип</label>
+                <select id="lesson-type" class="admin-input" required>
+                    <option value="group">Группа</option>
+                    <option value="individual">Индивидуально</option>
+                </select>
+
+                <label style="font-size: 12px; color: var(--on-muted);">Начало</label>
+                <input type="datetime-local" id="lesson-start" class="admin-input" required />
+
+                <label style="font-size: 12px; color: var(--on-muted);">Конец</label>
+                <input type="datetime-local" id="lesson-end" class="admin-input" required />
+
+                <label style="font-size: 12px; color: var(--on-muted);">Вместимость</label>
+                <input type="number" id="lesson-capacity" class="admin-input" value="1" min="1" required />
+
+                <div class="modal-actions" style="margin-top: 16px;">
+                    <button type="button" class="btn-ghost" onclick="closeModals()">Отмена</button>
+                    <button type="submit" class="btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Staff Modal -->
+    <div id="staff-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 class="modal-title">Добавить преподавателя</h3>
+            <form class="admin-form" id="staff-form" style="margin-top:16px;">
+                <input type="email" id="staff-email" class="admin-input" placeholder="Email" required />
+                <input type="password" id="staff-password" class="admin-input" placeholder="Пароль" required />
+                <input type="text" id="staff-first-name" class="admin-input" placeholder="Имя" required />
+                <input type="text" id="staff-last-name" class="admin-input" placeholder="Фамилия" required />
+                <label style="font-size: 12px; color: var(--on-muted);">Роль</label>
+                <select id="staff-role" class="admin-input" required>
+                    <option value="teacher">Учитель</option>
+                    <option value="admin">Админ</option>
+                </select>
+
+                <div class="modal-actions" style="margin-top: 16px;">
+                    <button type="button" class="btn-ghost" onclick="closeModals()">Отмена</button>
+                    <button type="submit" class="btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assign Language Modal -->
+    <div id="assign-lang-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 class="modal-title">Привязать язык</h3>
+            <form class="admin-form" id="assign-lang-form" style="margin-top:16px;">
+                <input type="hidden" id="assign-staff-id" />
+                <select id="assign-language-select" class="admin-input" required></select>
+                <div class="modal-actions" style="margin-top: 16px;">
+                    <button type="button" class="btn-ghost" onclick="closeModals()">Отмена</button>
+                    <button type="submit" class="btn-primary">Привязать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div id="delete-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 class="modal-title">Удалить?</h3>
+            <p style="color:var(--on-muted); margin-top:8px;">Действие необратимо.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-ghost" onclick="closeModals()">Отмена</button>
+                <button type="button" id="delete-confirm-btn" class="btn-danger">Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js?v=2"></script>
+</body>
+
+</html>

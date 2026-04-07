@@ -115,3 +115,22 @@ async def read_staff_me(
     current_staff: Staff = Depends(get_current_staff)
 ):
     return current_staff
+
+@router.delete("/{staff_id}", summary="Удалить сотрудника (Админ)", description="Удаление профиля преподавателя или администратора. Доступно только администраторам.", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_staff(
+    staff_id: uuid.UUID,
+    session: AsyncSession = Depends(get_async_session),
+    current_active_admin: Staff = Depends(get_current_active_admin)
+):
+    query = select(Staff).where(Staff.id == staff_id)
+    result = await session.execute(query)
+    staff = result.scalar_one_or_none()
+
+    if not staff:
+        raise HTTPException(status_code=404, detail="Сотрудник не найден")
+
+    if staff.id == current_active_admin.id:
+         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Нельзя удалить самого")
+
+    await session.delete(staff)
+    await session.commit()

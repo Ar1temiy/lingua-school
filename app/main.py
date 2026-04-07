@@ -47,3 +47,12 @@ if os.path.isdir(MINIAPP_DIR):
     @app.get("/miniapp", include_in_schema=False)
     async def miniapp_root():
         return FileResponse(os.path.join(MINIAPP_DIR, "index.html"))
+
+# Админ панель
+ADMIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "admin")
+os.makedirs(ADMIN_DIR, exist_ok=True)
+app.mount("/admin", StaticFiles(directory=ADMIN_DIR, html=True), name="admin")
+
+@app.get("/admin", include_in_schema=False)
+async def admin_root():
+    return FileResponse(os.path.join(ADMIN_DIR, "index.html"))
