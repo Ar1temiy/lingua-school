@@ -1,5 +1,5 @@
 import uuid
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from app.models.users import RoleEnum
 from .education import LanguageResponse
 
@@ -22,12 +22,13 @@ class StudentResponse(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str | None = None
     token_type: str
 
 
 #Схема для СОЗДАНИЯ сотрудника
 class StaffCreate(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     first_name: str
     last_name: str

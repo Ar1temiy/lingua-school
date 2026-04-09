@@ -9,7 +9,7 @@ from jwt.exceptions import InvalidTokenError
 from app.core.config import settings
 from app.core.database import get_async_session
 from app.models.users import Staff, Student
-from app.core.security import is_valid_vk_query
+from app.core.security import is_valid_vk_query, verify_token
 from urllib.parse import parse_qsl
 from fastapi import Header
 
@@ -25,7 +25,7 @@ async def get_current_staff(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = verify_token(token, "access")
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception

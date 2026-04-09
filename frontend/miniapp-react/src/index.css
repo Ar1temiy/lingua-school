@@ -1,0 +1,331 @@
+@import "tailwindcss";
+
+/* ============================================================
+   LINGUA SCHOOL — "THE ETHEREAL ACADEMY" DESIGN SYSTEM
+   Design: The Fluid Scholar / Stitch Export
+   ============================================================ */
+
+@theme {
+  /* ---------------- Font ---------------- */
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-manrope: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+
+  /* ---------------- Design Tokens: Light Mode (default) ---------------- */
+  --color-background:                 #f7f9fc;
+  --color-surface:                    #f7f9fc;
+  --color-surface-bright:             #f7f9fc;
+  --color-surface-dim:                #d8dadd;
+  --color-surface-variant:            #e0e3e6;
+  --color-surface-tint:               #4355b9;
+
+  --color-surface-container-lowest:   #ffffff;
+  --color-surface-container-low:      #f2f4f7;
+  --color-surface-container:          #eceef1;
+  --color-surface-container-high:     #e6e8eb;
+  --color-surface-container-highest:  #e0e3e6;
+
+  --color-primary:                    #394baf;
+  --color-primary-container:          #5365c9;
+  --color-primary-fixed:              #dee0ff;
+  --color-primary-fixed-dim:          #bac3ff;
+  --color-on-primary:                 #ffffff;
+  --color-on-primary-container:       #efefff;
+  --color-on-primary-fixed:           #00105c;
+  --color-on-primary-fixed-variant:   #293ca0;
+  --color-inverse-primary:            #bac3ff;
+
+  --color-secondary:                  #4858ab;
+  --color-secondary-container:        #96a5ff;
+  --color-secondary-fixed:            #dee0ff;
+  --color-secondary-fixed-dim:        #bac3ff;
+  --color-on-secondary:               #ffffff;
+  --color-on-secondary-container:     #27378a;
+  --color-on-secondary-fixed:         #00105b;
+  --color-on-secondary-fixed-variant: #2f3f92;
+
+  --color-tertiary:                   #993100;
+  --color-tertiary-container:         #c24100;
+  --color-tertiary-fixed:             #ffdbcf;
+  --color-tertiary-fixed-dim:         #ffb59b;
+  --color-on-tertiary:                #ffffff;
+  --color-on-tertiary-container:      #ffece6;
+  --color-on-tertiary-fixed:          #380d00;
+  --color-on-tertiary-fixed-variant:  #812800;
+
+  --color-error:                      #ba1a1a;
+  --color-error-container:            #ffdad6;
+  --color-on-error:                   #ffffff;
+  --color-on-error-container:         #93000a;
+
+  --color-on-surface:                 #191c1e;
+  --color-on-surface-variant:         #434656;
+  --color-on-background:              #191c1e;
+
+  --color-outline:                    #747688;
+  --color-outline-variant:            #c4c5d9;
+
+  --color-inverse-surface:            #2d3133;
+  --color-inverse-on-surface:         #eff1f4;
+
+  /* ---------------- Border Radius ---------------- */
+  --radius-sm:   0.5rem;
+  --radius-md:   1rem;
+  --radius-lg:   1.5rem;
+  --radius-xl:   2rem;
+  --radius-2xl:  3rem;
+  --radius-full: 9999px;
+}
+
+/* ============================================================
+   BASE STYLES
+   ============================================================ */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: max(884px, 100dvh);
+    font-family: var(--font-sans);
+    background-color: #e8ecf0;
+    color: var(--color-on-surface);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ============================================================
+   SCROLLBAR HIDE
+   ============================================================ */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================================
+   MATERIAL SYMBOLS DEFAULTS
+   ============================================================ */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+}
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ============================================================
+   GLASSMORPHISM UTILITIES
+   ============================================================ */
+.glass {
+  background: rgba(247, 249, 252, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-nav {
+  background: rgba(247, 249, 252, 0.80);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* ============================================================
+   GRADIENT PRIMARIES
+   ============================================================ */
+.btn-primary {
+  background: linear-gradient(135deg, #394baf 0%, #5365c9 100%);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.btn-primary:hover    { opacity: 0.92; }
+.btn-primary:active   { transform: scale(0.96); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ============================================================
+   CARD STYLES (The Floating Container)
+   ============================================================ */
+.card {
+  background: var(--color-surface-container-lowest);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hero {
+  background: linear-gradient(135deg, #394baf 0%, #5365c9 100%);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================================
+   CHIP STYLES
+   ============================================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+.chip:active { transform: scale(0.95); }
+.chip-default {
+  background: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+}
+.chip-selected {
+  background: linear-gradient(135deg, #394baf 0%, #5365c9 100%);
+  color: #ffffff;
+  transform: scale(1.04);
+}
+
+/* ============================================================
+   PROGRESS BAR
+   ============================================================ */
+.progress-track {
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-variant);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.progress-fill-error {
+  background: var(--color-error);
+  opacity: 0.4;
+}
+
+/* ============================================================
+   MICRO ANIMATIONS
+   ============================================================ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
+}
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.animate-fade-in-up  { animation: fadeInUp  0.4s ease both; }
+.animate-fade-in     { animation: fadeIn    0.3s ease both; }
+.animate-scale-in    { animation: scaleIn   0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-pulse-dot   { animation: pulse-dot 2s ease infinite; }
+
+/* Stagger delays */
+.delay-50  { animation-delay: 50ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-150 { animation-delay: 150ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-250 { animation-delay: 250ms; }
+.delay-300 { animation-delay: 300ms; }
+
+/* ============================================================
+   SKELETON LOADER
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-container-high) 25%,
+    var(--color-surface-container)      50%,
+    var(--color-surface-container-high) 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.3s infinite linear;
+  border-radius: var(--radius-md);
+}
+
+/* ============================================================
+   TOAST / NOTIFICATION COMPONENTS
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 6rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 9999;
+  padding: 0.875rem 1.5rem;
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: white;
+  animation: scaleIn 0.25s ease both;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(57, 75, 175, 0.3);
+}
+.toast-success { background: linear-gradient(135deg, #394baf, #5365c9); }
+.toast-error   { background: #ba1a1a; }
+
+/* ============================================================
+   ACTIVE TAB INDICATOR (BottomNav)
+   ============================================================ */
+.tab-pill {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-pill.active {
+  background: rgba(57, 75, 175, 0.1);
+  color: var(--color-primary);
+  transform: scale(1.06);
+}
+.tab-pill.inactive {
+  color: var(--color-outline);
+}
+.tab-pill.inactive:active { transform: scale(0.95); }
+
+/* ============================================================
+   INPUT FIELD
+   ============================================================ */
+.input-field {
+  background: var(--color-surface-container-low);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 0.875rem 1.25rem;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  color: var(--color-on-surface);
+  transition: border-color 0.2s ease, background 0.2s ease;
+  outline: none;
+  width: 100%;
+}
+.input-field:focus {
+  background: var(--color-surface-container-lowest);
+  border-color: rgba(57, 75, 175, 0.3);
+}

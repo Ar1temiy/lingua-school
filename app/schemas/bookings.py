@@ -7,7 +7,6 @@ from app.schemas.users import StaffResponse
 
 class BookingCreate(BaseModel):
     lesson_id: uuid.UUID
-    student_id: uuid.UUID #потом убрать, так как айди берется из вк
 
 class BookingResponse(BaseModel):
     id: uuid.UUID

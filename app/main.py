@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
+from app.core.config import settings
 from app.api.students import router as students_router
 from app.api.languages import router as languages_router
 from app.api.staff import router as staff_router
@@ -20,14 +21,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://vk.com",
-        "https://mini.apps.vk.com",
-        "https://app54520332.vk-apps.com",
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,20 +33,33 @@ app.include_router(staff_router)
 app.include_router(lessons_router)
 app.include_router(booking_router)
 
-# Раздаём Mini App как статику по пути /miniapp
-MINIAPP_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "miniapp")
-if os.path.isdir(MINIAPP_DIR):
-    app.mount("/miniapp", StaticFiles(directory=MINIAPP_DIR, html=True), name="miniapp")
+# Раздаём новый React Mini App
+MINIAPP_REACT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "miniapp-react", "dist")
+MINIAPP_LEGACY_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "miniapp")
+
+# Новый React Mini App
+if os.path.isdir(MINIAPP_REACT_DIR):
+    app.mount("/miniapp", StaticFiles(directory=MINIAPP_REACT_DIR, html=True), name="miniapp")
 
     @app.get("/miniapp", include_in_schema=False)
     async def miniapp_root():
-        return FileResponse(os.path.join(MINIAPP_DIR, "index.html"))
+        return FileResponse(os.path.join(MINIAPP_REACT_DIR, "index.html"))
 
-# Админ панель
-ADMIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "admin")
-os.makedirs(ADMIN_DIR, exist_ok=True)
-app.mount("/admin", StaticFiles(directory=ADMIN_DIR, html=True), name="admin")
+# Legacy (старый Vanilla JS) — fallback по отдельному пути
+if os.path.isdir(MINIAPP_LEGACY_DIR):
+    app.mount("/miniapp-legacy", StaticFiles(directory=MINIAPP_LEGACY_DIR, html=True), name="miniapp-legacy")
 
-@app.get("/admin", include_in_schema=False)
-async def admin_root():
-    return FileResponse(os.path.join(ADMIN_DIR, "index.html"))
+# Админ панель (Новый React)
+ADMIN_REACT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "admin-react", "dist")
+ADMIN_LEGACY_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "admin")
+
+if os.path.isdir(ADMIN_REACT_DIR):
+    app.mount("/admin", StaticFiles(directory=ADMIN_REACT_DIR, html=True), name="admin")
+
+    @app.get("/admin", include_in_schema=False)
+    @app.get("/admin/{full_path:path}", include_in_schema=False)
+    async def admin_root():
+        return FileResponse(os.path.join(ADMIN_REACT_DIR, "index.html"))
+
+if os.path.isdir(ADMIN_LEGACY_DIR):
+    app.mount("/admin-legacy", StaticFiles(directory=ADMIN_LEGACY_DIR, html=True), name="admin-legacy")

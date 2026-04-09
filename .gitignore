@@ -30,9 +30,13 @@ __pycache__/
 *.sqlite3
 *.db
 
-# Системные файлы
+# Системные файлы и мусор
 .DS_Store
 Thumbs.db
-
-#мусор
 zapusk.md
+
+# Frontend зависимости и сборка
+node_modules/
+dist/
+.eslintcache
+build/

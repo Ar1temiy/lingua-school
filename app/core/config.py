@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "secret"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080 # 7 days
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 43200 # 30 days
+    CORS_ORIGINS: list[str] = ["*"]
 
     @property
     def database_url_async(self) -> str:
