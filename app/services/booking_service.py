@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from app.models.education import Lesson, Booking, BookingStatusEnum
 from app.models.users import Staff, Student
 from app.worker.tasks import send_vk_notification, send_reminder_task
+from datetime import timedelta
 
 
 class BookingService:

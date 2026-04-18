@@ -36,20 +36,15 @@ def send_vk_notification(self, vk_user_id: int, message: str):
 
 @celery_app.task(bind=True)
 def send_reminder_task(self, booking_id: str, vk_user_id: int):
-    """
-    Обертка для запуска асинхронной проверки в синхронном Celery воркере
-    """
-    return asyncio.get_event_loop().run_until_complete(
-        self._async_reminder_logic(booking_id, vk_user_id)
-    )
+    return asyncio.run(_async_reminder_logic(self, booking_id, vk_user_id))
 
-async def _async_reminder_logic(self, booking_id: str, vk_user_id: int):
+
+async def _async_reminder_logic(task_instance, booking_id: str, vk_user_id: int):
     async with async_session_maker() as session:
         query = select(Booking).where(Booking.id == booking_id)
         result = await session.execute(query)
         booking = result.scalar_one_or_none()
 
-        # ГЛАВНАЯ ПРОВЕРКА: Если запись отменена, сообщение не уйдет
         if not booking or booking.status != BookingStatusEnum.active:
             print(f"Reminder skipped: Booking {booking_id} is not active.")
             return
@@ -60,5 +55,5 @@ async def _async_reminder_logic(self, booking_id: str, vk_user_id: int):
             msg = "Напоминание! Сегодня у тебя занятие. Ждем тебя!"
             vk.messages.send(user_id=vk_user_id, message=msg, random_id=random.randint(1, 2 ** 31))
         except Exception as exc:
-            # Если VK упал, пробуем еще раз через 60 сек
-            raise self.retry(exc=exc, countdown=60)
+            # Используем переданный task_instance для повтора задачи
+            raise task_instance.retry(exc=exc, countdown=60)

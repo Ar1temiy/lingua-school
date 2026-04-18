@@ -11,6 +11,7 @@ from app.models.users import Staff, Student
 from app.schemas.education import LessonCreate, LessonStatusUpdate, LessonStudentResponse, LessonUpdate
 from app.schemas.users import StudentResponse
 
+
 class LessonService:
     @staticmethod
     async def create_lesson(session: AsyncSession, lesson_data: LessonCreate, current_staff: Staff) -> Lesson:
@@ -65,17 +66,23 @@ class LessonService:
 
         session.add(new_lesson)
         await session.commit()
-        await session.refresh(new_lesson)
 
-        return new_lesson
+        # Исправление MissingGreenlet: загружаем связи перед возвратом объекта
+        # Это нужно, так как в модели Lesson есть @property, обращающиеся к teacher и language
+        query = select(Lesson).where(Lesson.id == new_lesson.id).options(
+            selectinload(Lesson.teacher),
+            selectinload(Lesson.language)
+        )
+        result = await session.execute(query)
+        return result.scalar_one()
 
     @staticmethod
     async def get_lessons(
-        session: AsyncSession,
-        teacher_id: Optional[uuid.UUID] = None,
-        date_from: Optional[date] = None,
-        date_to: Optional[date] = None,
-        current_student: Optional[Student] = None
+            session: AsyncSession,
+            teacher_id: Optional[uuid.UUID] = None,
+            date_from: Optional[date] = None,
+            date_to: Optional[date] = None,
+            current_student: Optional[Student] = None
     ) -> List[LessonStudentResponse]:
         query = select(Lesson).where(Lesson.status != LessonStatusEnum.cancelled)
 
@@ -93,29 +100,30 @@ class LessonService:
         )
         result = await session.execute(query)
         lessons = result.scalars().all()
-        
+
         response = []
         for lesson in lessons:
             active_bookings = [b for b in lesson.bookings if b.status == "active"]
             is_booked = False
             if current_student:
-                 is_booked = any(b.student_id == current_student.id for b in active_bookings)
-                 
+                is_booked = any(b.student_id == current_student.id for b in active_bookings)
+
             available_slots = lesson.capacity - len(active_bookings)
-            
+
             lesson_dict = lesson.__dict__.copy()
             lesson_dict["available_slots"] = available_slots
             lesson_dict["is_booked_by_me"] = is_booked
             response.append(LessonStudentResponse(**lesson_dict))
-            
+
         return response
 
     @staticmethod
-    async def get_lesson_students(session: AsyncSession, lesson_id: uuid.UUID, current_staff: Staff) -> List[StudentResponse]:
+    async def get_lesson_students(session: AsyncSession, lesson_id: uuid.UUID, current_staff: Staff) -> List[
+        StudentResponse]:
         query = select(Lesson).where(Lesson.id == lesson_id)
         result = await session.execute(query)
         lesson = result.scalar_one_or_none()
-        
+
         if not lesson:
             raise HTTPException(status_code=404, detail="Занятие не найдено")
         if current_staff.role == "teacher" and lesson.teacher_id != current_staff.id:
@@ -130,12 +138,16 @@ class LessonService:
 
     @staticmethod
     async def update_lesson_status(
-        session: AsyncSession, lesson_id: uuid.UUID, status_update: LessonStatusUpdate, current_staff: Staff
+            session: AsyncSession, lesson_id: uuid.UUID, status_update: LessonStatusUpdate, current_staff: Staff
     ) -> Lesson:
-        query = select(Lesson).where(Lesson.id == lesson_id)
+        # Добавляем selectinload сразу при поиске для обновления статуса
+        query = select(Lesson).where(Lesson.id == lesson_id).options(
+            selectinload(Lesson.teacher),
+            selectinload(Lesson.language)
+        )
         result = await session.execute(query)
         lesson = result.scalar_one_or_none()
-        
+
         if not lesson:
             raise HTTPException(status_code=404, detail="Занятие не найдено")
         if current_staff.role == "teacher" and lesson.teacher_id != current_staff.id:
@@ -143,17 +155,21 @@ class LessonService:
 
         lesson.status = status_update.status
         await session.commit()
-        await session.refresh(lesson)
+        await session.refresh(lesson, ["teacher", "language"])
         return lesson
 
     @staticmethod
     async def update_lesson(
-        session: AsyncSession, lesson_id: uuid.UUID, lesson_update: LessonUpdate, current_staff: Staff
+            session: AsyncSession, lesson_id: uuid.UUID, lesson_update: LessonUpdate, current_staff: Staff
     ) -> Lesson:
-        query = select(Lesson).where(Lesson.id == lesson_id)
+        # Добавляем selectinload для корректной сериализации ответа
+        query = select(Lesson).where(Lesson.id == lesson_id).options(
+            selectinload(Lesson.teacher),
+            selectinload(Lesson.language)
+        )
         result = await session.execute(query)
         lesson = result.scalar_one_or_none()
-        
+
         if not lesson:
             raise HTTPException(status_code=404, detail="Занятие не найдено")
         if current_staff.role == "teacher" and lesson.teacher_id != current_staff.id:
@@ -184,7 +200,7 @@ class LessonService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="У преподавателя уже есть занятие в это время (накладка в расписании)"
                 )
-            
+
             lesson.start_time = new_start_time
             lesson.end_time = new_end_time
 
@@ -192,7 +208,7 @@ class LessonService:
             lesson.capacity = lesson_update.capacity
 
         await session.commit()
-        await session.refresh(lesson)
+        await session.refresh(lesson, ["teacher", "language"])
         return lesson
 
     @staticmethod
@@ -200,7 +216,7 @@ class LessonService:
         query = select(Lesson).where(Lesson.id == lesson_id)
         result = await session.execute(query)
         lesson = result.scalar_one_or_none()
-        
+
         if not lesson:
             raise HTTPException(status_code=404, detail="Занятие не найдено")
         if current_staff.role == "teacher" and lesson.teacher_id != current_staff.id:
