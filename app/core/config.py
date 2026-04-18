@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080 # 7 days
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 43200 # 30 days
     CORS_ORIGINS: list[str] = ["*"]
+    VK_GROUP_TOKEN: str
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str = "rpc://"
 
     @property
     def database_url_async(self) -> str:
