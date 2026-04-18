@@ -74,20 +74,32 @@ class BookingService:
 
     @staticmethod
     async def update_booking_status(
-        session: AsyncSession, booking_id: uuid.UUID, new_status: BookingStatusEnum, current_staff: Staff
+            session: AsyncSession, booking_id: uuid.UUID, new_status: BookingStatusEnum, current_staff: Staff
     ) -> Booking:
-        query = select(Booking).join(Lesson).where(Booking.id == booking_id)
+        # Добавляем selectinload для получения данных о занятии и студенте
+        query = select(Booking).where(Booking.id == booking_id).options(
+            selectinload(Booking.lesson),
+            selectinload(Booking.student)
+        )
         result = await session.execute(query)
         booking = result.scalar_one_or_none()
-        
+
         if not booking:
             raise HTTPException(status_code=404, detail="Запись не найдена")
         if current_staff.role == "teacher" and booking.lesson.teacher_id != current_staff.id:
             raise HTTPException(status_code=403, detail="Действие запрещено. Это запись не к вам на занятие.")
-            
+
         booking.status = new_status
         await session.commit()
         await session.refresh(booking)
+
+        # --- ОТПРАВКА УВЕДОМЛЕНИЯ ПРИ ОТМЕНЕ ПРЕПОДАВАТЕЛЕМ ---
+        if new_status == BookingStatusEnum.cancelled_by_school:
+            if booking.student and getattr(booking.student, 'vk_id', None):
+                date_str = booking.lesson.start_time.strftime("%d.%m.%Y в %H:%M")
+                msg = f"К сожалению, ваша запись на занятие {date_str} была отменена преподавателем/школой."
+                send_vk_notification.delay(booking.student.vk_id, msg)
+
         return booking
 
     @staticmethod
@@ -103,16 +115,28 @@ class BookingService:
 
     @staticmethod
     async def cancel_student_booking(session: AsyncSession, booking_id: uuid.UUID, student_id: uuid.UUID) -> Booking:
-        query = select(Booking).where(Booking.id == booking_id)
+        # Также подгружаем связанные данные (урок и студент)
+        query = select(Booking).where(Booking.id == booking_id).options(
+            selectinload(Booking.lesson),
+            selectinload(Booking.student)
+        )
         result = await session.execute(query)
         booking = result.scalar_one_or_none()
-        
+
         if not booking:
             raise HTTPException(status_code=404, detail="Запись не найдена")
         if booking.student_id != student_id:
             raise HTTPException(status_code=403, detail="Это не ваша запись")
-            
+
         booking.status = BookingStatusEnum.cancelled_by_student
         await session.commit()
         await session.refresh(booking)
+
+        # --- ОТПРАВКА УВЕДОМЛЕНИЯ ПРИ ОТМЕНЕ СТУДЕНТОМ ---
+        if booking.student and getattr(booking.student, 'vk_id', None):
+            date_str = booking.lesson.start_time.strftime("%d.%m.%Y в %H:%M")
+            msg = f"Вы успешно отменили свою запись на занятие {date_str}."
+            send_vk_notification.delay(booking.student.vk_id, msg)
+
         return booking
+
