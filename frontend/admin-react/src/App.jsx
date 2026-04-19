@@ -6,7 +6,7 @@ import LoginScreen from './screens/LoginScreen'
 import DashboardScreen from './screens/DashboardScreen'
 import TeachersScreen from './screens/TeachersScreen'
 import LanguagesScreen from './screens/LanguagesScreen'
-import BookingsScreen from './screens/BookingsScreen'
+import LessonsScreen from './screens/LessonsScreen'
 import SettingsScreen from './screens/SettingsScreen'
 
 export default function App() {
@@ -25,7 +25,7 @@ export default function App() {
                     <Route path="/dashboard" element={<DashboardScreen />} />
                     <Route path="/teachers" element={<TeachersScreen />} />
                     <Route path="/languages" element={<LanguagesScreen />} />
-                    <Route path="/bookings" element={<BookingsScreen />} />
+                    <Route path="/lessons" element={<LessonsScreen />} />
                     <Route path="/settings" element={<SettingsScreen />} />
                   </Routes>
                 </AdminLayout>

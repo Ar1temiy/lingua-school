@@ -1,7 +1,85 @@
 import { useState } from 'react'
-import { Users, Plus, Trash2, Search, RefreshCw, X, AlertCircle } from 'lucide-react'
+import { Users, Plus, Trash2, Search, RefreshCw, X, AlertCircle, Languages } from 'lucide-react'
 import { useStaff } from '../hooks/useStaff'
+import { useLanguages } from '../hooks/useLanguages'
 import apiClient from '../api/client'
+
+function ManageLanguagesModal({ teacher, onClose, onUpdated }) {
+  const { languages, loading: langsLoading } = useLanguages()
+  const { assignLanguage } = useStaff()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const teacherLangIds = teacher.languages?.map(l => l.id) || []
+
+  const handleToggleLanguage = async (langId) => {
+    setError(null)
+    setLoading(true)
+    try {
+      // Backend only has POST for assign, let's assume it handles toggling or just assign for now
+      // If we need unassign, we'd need a DELETE endpoint.
+      await assignLanguage(teacher.id, langId)
+      onUpdated()
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update language')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card" style={{ maxWidth: '400px' }}>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--color-on-surface)' }}>
+              Manage Languages
+            </h2>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--color-outline)' }}>{teacher.full_name}</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-outline)' }}>
+            <X size={20} />
+          </button>
+        </div>
+
+        {langsLoading ? (
+          <div className="flex justify-center p-8"><RefreshCw className="animate-spin" /></div>
+        ) : (
+          <div className="flex flex-col gap-2 mb-6">
+            {languages.map(lang => {
+              const isAssigned = teacherLangIds.includes(lang.id)
+              return (
+                <button
+                  key={lang.id}
+                  onClick={() => handleToggleLanguage(lang.id)}
+                  disabled={loading}
+                  className={`flex items-center justify-between p-3 rounded-xl transition-all ${isAssigned
+                      ? 'style-assigned'
+                      : 'style-unassigned'
+                    }`}
+                  style={{
+                    border: '1px solid var(--color-surface-container-high)',
+                    background: isAssigned ? 'var(--color-primary-container)' : 'var(--color-surface)',
+                    color: isAssigned ? 'var(--color-on-primary-container)' : 'var(--color-on-surface)',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                >
+                  <span style={{ fontWeight: 700 }}>{lang.name}</span>
+                  {isAssigned && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)' }} />}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {error && <p style={{ color: 'var(--color-error)', fontSize: '0.8125rem', marginBottom: '1rem' }}>{error}</p>}
+
+        <button className="btn-primary w-full justify-center" onClick={onClose}>Done</button>
+      </div>
+    </div>
+  )
+}
 
 function CreateStaffModal({ onClose, onCreated }) {
   const [form, setForm] = useState({ full_name: '', email: '', password: '', role: 'teacher' })
@@ -111,6 +189,7 @@ export default function TeachersScreen() {
   const { staff, loading, refetch, deleteStaff } = useStaff()
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [managingTeacher, setManagingTeacher] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
 
   const filtered = staff.filter((s) =>
@@ -134,6 +213,13 @@ export default function TeachersScreen() {
     <div style={{ padding: '2rem 2.5rem', maxWidth: '1200px' }}>
       {showCreate && (
         <CreateStaffModal onClose={() => setShowCreate(false)} onCreated={refetch} />
+      )}
+      {managingTeacher && (
+        <ManageLanguagesModal
+          teacher={managingTeacher}
+          onClose={() => setManagingTeacher(null)}
+          onUpdated={refetch}
+        />
       )}
 
       <div className="flex items-center justify-between mb-8 animate-fade-in">
@@ -218,7 +304,20 @@ export default function TeachersScreen() {
                         {member.role === 'admin' ? 'Admin' : 'Teacher'}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--color-on-surface-variant)', fontSize: '0.875rem' }}>{langs}</td>
+                    <td style={{ color: 'var(--color-on-surface-variant)', fontSize: '0.875rem' }}>
+                      <div className="flex items-center gap-2">
+                        <span>{langs}</span>
+                        {member.role === 'teacher' && (
+                          <button
+                            onClick={() => setManagingTeacher(member)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-primary)', padding: '4px' }}
+                            title="Manage Languages"
+                          >
+                            <Languages size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                     <td style={{ color: 'var(--color-on-surface-variant)', fontSize: '0.875rem' }}>{member.email}</td>
                     <td style={{ textAlign: 'right', padding: '1rem 1.5rem' }}>
                       <button

@@ -26,5 +26,10 @@ export function useStaff() {
     await fetchStaff()
   }, [fetchStaff])
 
-  return { staff, loading, error, refetch: fetchStaff, deleteStaff }
+  const assignLanguage = useCallback(async (staffId, languageId) => {
+    await apiClient.post(`/staff/${staffId}/languages/${languageId}`)
+    await fetchStaff()
+  }, [fetchStaff])
+
+  return { staff, loading, error, refetch: fetchStaff, deleteStaff, assignLanguage }
 }

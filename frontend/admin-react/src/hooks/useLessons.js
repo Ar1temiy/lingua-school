@@ -21,5 +21,10 @@ export function useLessons() {
 
   useEffect(() => { fetchLessons() }, [fetchLessons])
 
-  return { lessons, loading, error, refetch: fetchLessons }
+  const createLesson = useCallback(async (payload) => {
+    await apiClient.post('/lessons/', payload)
+    await fetchLessons()
+  }, [fetchLessons])
+
+  return { lessons, loading, error, refetch: fetchLessons, createLesson }
 }
