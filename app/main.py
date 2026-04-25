@@ -27,11 +27,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(students_router)
-app.include_router(languages_router)
-app.include_router(staff_router)
-app.include_router(lessons_router)
-app.include_router(booking_router)
+app.include_router(students_router, prefix="/api")
+app.include_router(languages_router, prefix="/api")
+app.include_router(staff_router, prefix="/api")
+app.include_router(lessons_router, prefix="/api")
+app.include_router(booking_router, prefix="/api")
 
 # Раздаём новый React Mini App
 MINIAPP_REACT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "miniapp-react", "dist")
@@ -63,3 +63,14 @@ if os.path.isdir(ADMIN_REACT_DIR):
 
 if os.path.isdir(ADMIN_LEGACY_DIR):
     app.mount("/admin-legacy", StaticFiles(directory=ADMIN_LEGACY_DIR, html=True), name="admin-legacy")
+
+# Панель преподавателя (Teacher React Panel)
+TEACHER_REACT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "teacher-react", "dist")
+
+if os.path.isdir(TEACHER_REACT_DIR):
+    app.mount("/teacher", StaticFiles(directory=TEACHER_REACT_DIR, html=True), name="teacher")
+
+    @app.get("/teacher", include_in_schema=False)
+    @app.get("/teacher/{full_path:path}", include_in_schema=False)
+    async def teacher_root():
+        return FileResponse(os.path.join(TEACHER_REACT_DIR, "index.html"))

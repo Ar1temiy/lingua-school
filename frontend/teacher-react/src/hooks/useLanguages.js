@@ -21,20 +21,5 @@ export function useLanguages() {
 
   useEffect(() => { fetchLanguages() }, [fetchLanguages])
 
-  const deleteLanguage = useCallback(async (langId) => {
-    await apiClient.delete(`/languages/${langId}`)
-    await fetchLanguages()
-  }, [fetchLanguages])
-
-  const createLanguage = useCallback(async (langData) => {
-    await apiClient.post(`/languages/`, langData)
-    await fetchLanguages()
-  }, [fetchLanguages])
-
-  const updateLanguage = useCallback(async (langId, langData) => {
-    await apiClient.patch(`/languages/${langId}`, langData)
-    await fetchLanguages()
-  }, [fetchLanguages])
-
-  return { languages, loading, error, refetch: fetchLanguages, deleteLanguage, createLanguage, updateLanguage }
+  return { languages, loading, error, refetch: fetchLanguages }
 }

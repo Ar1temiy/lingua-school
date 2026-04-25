@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from app.models.education import BookingStatusEnum
 from app.schemas.education import LessonResponse
-from app.schemas.users import StaffResponse
+from app.schemas.users import StaffResponse, StudentResponse
 
 class BookingCreate(BaseModel):
     lesson_id: uuid.UUID
@@ -26,6 +26,7 @@ class BookingDetailResponse(BaseModel):
     created_at: datetime
     # Магия Pydantic: мы вкладываем одну схему в другую
     lesson: LessonResponse
+    student: StudentResponse | None = None
     model_config = ConfigDict(from_attributes=True)
 
 class BookingStatusUpdate(BaseModel):

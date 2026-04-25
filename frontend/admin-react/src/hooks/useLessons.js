@@ -21,5 +21,20 @@ export function useLessons() {
 
   useEffect(() => { fetchLessons() }, [fetchLessons])
 
-  return { lessons, loading, error, refetch: fetchLessons }
+  const getLessonStudents = useCallback(async (lessonId) => {
+    const { data } = await apiClient.get(`/lessons/${lessonId}/students`)
+    return data
+  }, [])
+
+  const changeLessonStatus = useCallback(async (lessonId, status) => {
+    await apiClient.patch(`/lessons/${lessonId}/status`, { status })
+    await fetchLessons()
+  }, [fetchLessons])
+
+  const updateLesson = useCallback(async (lessonId, lessonData) => {
+    await apiClient.patch(`/lessons/${lessonId}`, lessonData)
+    await fetchLessons()
+  }, [fetchLessons])
+
+  return { lessons, loading, error, refetch: fetchLessons, getLessonStudents, changeLessonStatus, updateLesson }
 }

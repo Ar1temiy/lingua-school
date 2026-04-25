@@ -111,6 +111,8 @@ class LessonService:
             available_slots = lesson.capacity - len(active_bookings)
 
             lesson_dict = lesson.__dict__.copy()
+            lesson_dict["teacher_name"] = lesson.teacher_name
+            lesson_dict["language_name"] = lesson.language_name
             lesson_dict["available_slots"] = available_slots
             lesson_dict["is_booked_by_me"] = is_booked
             response.append(LessonStudentResponse(**lesson_dict))
