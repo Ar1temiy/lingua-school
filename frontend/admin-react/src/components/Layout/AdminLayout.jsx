@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/teachers',  icon: Users,           label: 'Teachers' },
   { to: '/languages', icon: Languages,        label: 'Languages' },
-  { to: '/lessons',   icon: CalendarDays,     label: 'Lessons' },
+  { to: '/bookings',  icon: CalendarDays,     label: 'Bookings' },
   { to: '/settings',  icon: Settings,         label: 'Settings' },
 ]
 

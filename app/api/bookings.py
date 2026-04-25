@@ -5,7 +5,7 @@ from sqlalchemy import select, func
 from typing import List
 from sqlalchemy.orm import selectinload
 from app.core.database import get_async_session
-from app.core.dependencies import get_current_staff, get_current_student
+from app.core.dependencies import get_current_staff, get_current_student, get_current_active_admin
 from app.models.education import BookingStatusEnum
 from app.models.users import Staff, Student
 from app.schemas.bookings import BookingCreate, BookingResponse, BookingStatusUpdate, BookingDetailResponse
@@ -61,3 +61,12 @@ async def cancel_my_booking(
         booking_id=booking_id,
         student_id=current_student.id
     )
+
+@router.get("/",
+            summary="Все бронирования (Админ)",
+            response_model=List[BookingDetailResponse])
+async def get_all_bookings(
+    session: AsyncSession = Depends(get_async_session),
+    current_admin: Staff = Depends(get_current_active_admin)
+):
+    return await BookingService.get_all_bookings(session)

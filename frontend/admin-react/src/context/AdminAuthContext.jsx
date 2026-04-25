@@ -35,7 +35,7 @@ export function AdminAuthProvider({ children }) {
     formData.append('password', password)
 
     // No /api prefix — FastAPI routes are at root (e.g. /staff/login)
-    const { data } = await axios.post('/staff/login', formData, {
+    const { data } = await axios.post('/api/staff/login', formData, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     })
 
@@ -46,7 +46,7 @@ export function AdminAuthProvider({ children }) {
       }
 
       // Fetch current user profile
-      const meResp = await axios.get('/staff/me', {
+      const meResp = await axios.get('/api/staff/me', {
         headers: { Authorization: `Bearer ${data.access_token}` },
       })
       const user = normalizeUser(meResp.data)

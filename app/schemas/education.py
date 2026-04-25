@@ -10,6 +10,10 @@ class LanguageCreate(BaseModel):
     name: str
     code: str
 
+class LanguageUpdate(BaseModel):
+    name: str | None
+    code: str | None
+
 #ответ
 class LanguageResponse(BaseModel):
     id: uuid.UUID

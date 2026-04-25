@@ -274,7 +274,7 @@ export default function LessonsScreen() {
                 }
 
                 return (
-                  <tr key={lesson.id} className="animate-fade-in" style={{ animationDelay: `${i * 30}ms' }}>
+                  <tr key={lesson.id} className="animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
                     <td style={{ padding: '1rem 1.5rem' }}>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center rounded-xl bg-surface-container-high" style={{ width: '40px', height: '40px' }}>

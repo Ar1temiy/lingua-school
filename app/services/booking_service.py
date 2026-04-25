@@ -140,3 +140,18 @@ class BookingService:
 
         return booking
 
+    @staticmethod
+    async def get_all_bookings(session: AsyncSession) -> List[Booking]:
+        query = (
+            select(Booking)
+            .options(
+                selectinload(Booking.student),
+                selectinload(Booking.lesson).selectinload(Lesson.teacher),  # Глубокая подгрузка, если нужно имя препода
+                selectinload(Booking.lesson).selectinload(Lesson.language)
+            )
+            .order_by(Booking.created_at.desc())  # Сортируем по дате создания (от новых к старым)
+        )
+
+        result = await session.execute(query)
+        return result.scalars().all()
+
